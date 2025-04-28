@@ -1,42 +1,44 @@
 import express from "express";
-import mysql from "mysql2/promise";
-import bodyParser from "body-parser"; // Para leer req.body
+import cors from "cors";
+import mysql from "mysql2";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+app.use(cors());
+app.use(express.json());
 
-app.use(bodyParser.json());
-
-// Conexión a Railway
 const pool = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  port: Number(process.env.MYSQLPORT),
+  host: process.env.DB_HOST,      // mysql-production-afe9.up.railway.app
+  port: process.env.DB_PORT,      // <PUERTO>
+  user: process.env.DB_USER,      // root
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
 });
 
-// Ruta para login
-app.post("/login", async (req, res) => {
+app.post("/login", (req, res) => {
   const { username, password } = req.body;
 
-  try {
-    const [rows] = await pool.query(
-      "SELECT * FROM users WHERE username = ? AND password = ?",
-      [username, password]
-    );
+  pool.query(
+    "SELECT * FROM users WHERE usuario = ? AND password = ?",
+    [username, password],
+    (error, results) => {
+      if (error) {
+        console.error("Error al consultar:", error);
+        return res.status(500).json({ success: false, message: "Error del servidor" });
+      }
 
-    if (rows.length > 0) {
-      res.json({ success: true, message: "Login exitoso", user: rows[0] });
-    } else {
-      res.status(401).json({ success: false, message: "Usuario o contraseña incorrectos" });
+      if (results.length > 0) {
+        res.json({ success: true, user: results[0] });
+      } else {
+        res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+      }
     }
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Error en el servidor");
-  }
+  );
 });
 
-app.listen(port, () => {
-  console.log(`Servidor corriendo en el puerto ${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
