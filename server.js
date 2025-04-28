@@ -20,7 +20,7 @@ const pool = mysql.createPool({
 });
 
 app.get("/", async (req, res) => {
-  res.send("Servidor funcionando 😎");
+  res.send("Servidor funcionando POR FIN; YA ERA HORA");
 });
 
 app.post("/login", async (req, res) => {
