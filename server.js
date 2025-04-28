@@ -11,7 +11,7 @@ app.use(express.json());
 
 // Crear conexión
 const connection = mysql.createConnection({
-  host: process.env.MYSQL_HOST || 'mysql.railway.internal',
+  host: process.env.MYSQL_HOST || 'mysql-production-afe9.up.railway.app',
   user: process.env.MYSQL_USER || 'root',
   password: process.env.MYSQL_PASSWORD || 'CgMIXsYWjNGDLmfKVXgzFPLOMznDxEcq',
   database: process.env.MYSQL_DATABASE || 'railway',
