@@ -24,12 +24,12 @@ app.get("/", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
+  const { usuario, password } = req.body;
   
   try {
     const [rows] = await pool.query(
       "SELECT * FROM users WHERE usuario = ? AND password = ?",
-      [username, password]
+      [usuario, password]
     );
 
     if (rows.length > 0) {
