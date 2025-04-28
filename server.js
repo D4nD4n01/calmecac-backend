@@ -24,12 +24,14 @@ app.get("/", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-  const { usuario, password } = req.body;
-  
+  const { username, password } = req.body;
+
+  console.log("Cuerpo de la solicitud:", req.body); // Verifica lo que llega al servidor
+
   try {
     const [rows] = await pool.query(
       "SELECT * FROM users WHERE usuario = ? AND password = ?",
-      [usuario, password]
+      [username, password]
     );
 
     if (rows.length > 0) {
@@ -42,6 +44,7 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ success: false, message: "Error en el servidor" });
   }
 });
+
 
 app.listen(port, () => {
   console.log(`Servidor backend corriendo en el puerto ${port}`);
