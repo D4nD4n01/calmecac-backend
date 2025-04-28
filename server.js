@@ -24,8 +24,8 @@ app.get("/", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-  const usuario = "memin";
-  const password = "memin";
+  const { usuario, password } = req.body;
+  console.log("Usuario recibido: ",usuario,password)
 
   //console.log("req de la solicitud:", req); // Verifica lo que llega al servidor
   //console.log("res de la solicitud:", res);
