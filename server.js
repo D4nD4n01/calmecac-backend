@@ -27,8 +27,8 @@ app.post("/login", async (req, res) => {
   const usuario = "memin";
   const password = "memin";
 
-  console.log("req de la solicitud:", req); // Verifica lo que llega al servidor
-  console.log("res de la solicitud:", res);
+  //console.log("req de la solicitud:", req); // Verifica lo que llega al servidor
+  //console.log("res de la solicitud:", res);
   try {
     const [rows] = await pool.query(
       "SELECT * FROM users WHERE usuario = ? AND password = ?",
@@ -42,7 +42,7 @@ app.post("/login", async (req, res) => {
     }
   } catch (error) {
     console.error("Error en login:", error);
-    res.status(500).json({ success: false, message: "Error en el servidor" });
+    res.status(500).json({ success: false, message: "Error en el servidor; no puede ingresar al login",req:req,res:res });
   }
 });
 
