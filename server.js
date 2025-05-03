@@ -23,6 +23,7 @@ const dbConfig = {
 };
 
 console.log("Valores de conexión LIMPIOS:");
+console.log("ola q ase")
 console.log("HOST:",dbConfig.host);
 console.log("PORT:",dbConfig.port);
 console.log("USER:",dbConfig.user);
