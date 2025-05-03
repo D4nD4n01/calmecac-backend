@@ -23,6 +23,11 @@ app.get("/", async (req, res) => {
   res.send("Servidor funcionando POR FIN; YA ERA HORA");
 });
 
+pool.getConnection()
+  .then(() => console.log("✅ Conexión a la base de datos MySQL exitosa"))
+  .catch(err => console.error("❌ Error al conectar con la base de datos:", err));
+
+
 app.post("/login", async (req, res) => {
   const { usuario, password } = req.body;
   console.log("Usuario recibido: ",usuario,password)
