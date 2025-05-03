@@ -11,6 +11,14 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+console.log("Valores de conexión:");
+console.log("HOST:", process.env.DB_HOST);
+console.log("PORT:", process.env.DB_PORT);
+console.log("USER:", process.env.DB_USER);
+console.log("PASS:", process.env.DB_PASSWORD);
+console.log("DB:", process.env.DB_DATABASE);
+
+
 const pool = mysql.createPool({
   host: process.env.DB_HOST,        // ej: mysql-production-afe9.up.railway.app
   user: process.env.DB_USER,        // ej: root
