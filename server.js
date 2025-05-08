@@ -24,11 +24,11 @@ const dbConfig = {
 
 console.log("Valores de conexión LIMPIOS:");
 console.log("ola q ase")
-console.log("HOST:",dbConfig.host);
-console.log("PORT:",dbConfig.port);
-console.log("USER:",dbConfig.user);
-console.log("PASS:",dbConfig.password);
-console.log("DB:",dbConfig.database);
+console.log("HOST:", dbConfig.host);
+console.log("PORT:", dbConfig.port);
+console.log("USER:", dbConfig.user);
+console.log("PASS:", dbConfig.password);
+console.log("DB:", dbConfig.database);
 
 // Crear conexión con valores limpios
 const pool = mysql.createPool(dbConfig);
@@ -63,6 +63,22 @@ app.post("/login", async (req, res) => {
   } catch (error) {
     console.error("Error en login:", error);
     res.status(500).json({ success: false, message: "Error en el servidor; no puede ingresar al login", req: req, res: res });
+  }
+});
+
+app.post("/course", async (req, res) => {
+  const { idTeacher } = req.body;
+
+  try {
+    const [rows] = await pool.query(
+      "SELECT * FROM course WHERE idTeacher = ?",
+      [idTeacher]
+    );
+
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error("❌ Error al obtener cursos:", error);
+    res.status(500).json({ success: false, message: "Error al obtener los cursos" });
   }
 });
 
