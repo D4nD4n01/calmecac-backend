@@ -43,44 +43,95 @@ pool.getConnection()
   .catch(err => console.error("❌ Error al conectar con la base de datos:", err));
 
 
-app.post("/login", async (req, res) => {
-  const { usuario, password } = req.body;
-  console.log("Usuario recibido: ", usuario, password)
+app.post("/wsCRUDlogin", async (req, res) => {
+  const { intMode, usuario, password, id, newUsuario, newPassword } = req.body;
 
-  //console.log("req de la solicitud:", req); // Verifica lo que llega al servidor
-  //console.log("res de la solicitud:", res);
   try {
-    const [rows] = await pool.query(
-      "SELECT * FROM users WHERE usuario = ? AND password = ?",
-      [usuario, password]
-    );
+    switch (intMode) {
+      case 0: // CONSULTAR
+        const [rows] = await pool.query(
+          "SELECT * FROM users WHERE usuario = ? AND password = ?",
+          [usuario, password]
+        );
+        if (rows.length > 0) {
+          res.json({ success: true, user: rows[0] });
+        } else {
+          res.status(401).json({ success: false, message: "Usuario o contraseña incorrectos" });
+        }
+        break;
 
-    if (rows.length > 0) {
-      res.json({ success: true, user: rows[0] });
-    } else {
-      res.status(401).json({ success: false, message: "Usuario o contraseña incorrectos" });
+      case 1: // INSERTAR
+        await pool.query(
+          "INSERT INTO users (usuario, password) VALUES (?, ?)",
+          [usuario, password]
+        );
+        res.json({ success: true, message: "Usuario registrado con éxito" });
+        break;
+
+      case 2: // EDITAR
+        await pool.query(
+          "UPDATE users SET usuario = ?, password = ? WHERE id = ?",
+          [newUsuario, newPassword, id]
+        );
+        res.json({ success: true, message: "Usuario actualizado con éxito" });
+        break;
+
+      default:
+        res.status(400).json({ success: false, message: "Modo inválido para login" });
     }
   } catch (error) {
-    console.error("Error en login:", error);
-    res.status(500).json({ success: false, message: "Error en el servidor; no puede ingresar al login", req: req, res: res });
+    console.error("Error en wsCRUDlogin:", error);
+    res.status(500).json({ success: false, message: "Error en el servidor" });
   }
 });
 
-app.post("/course", async (req, res) => {
-  const { idTeacher } = req.body;
+
+app.post("/wsCRUDcourse", async (req, res) => {
+  const { intMode, idTeacher, idCourse, strSubject, intGrade, strClassroom, strHour } = req.body;
 
   try {
-    const [rows] = await pool.query(
-      "SELECT * FROM course WHERE idTeacher = ?",
-      [idTeacher]
-    );
+    switch (intMode) {
+      case 0: // CONSULTAR
+        const [rows] = await pool.query(
+          "SELECT * FROM course WHERE idTeacher = ?",
+          [idTeacher]
+        );
+        res.json({ success: true, data: rows });
+        break;
 
-    res.json({ success: true, data: rows });
+      case 1: // INSERTAR
+        await pool.query(
+          "INSERT INTO course (idTeacher, strSubject, intGrade, strClassroom, strHour) VALUES (?, ?, ?, ?, ?)",
+          [idTeacher, strSubject, intGrade, strClassroom, strHour]
+        );
+        res.json({ success: true, message: "Curso registrado con éxito" });
+        break;
+
+      case 2: // EDITAR
+        await pool.query(
+          "UPDATE course SET strSubject = ?, intGrade = ?, strClassroom = ?, strHour = ? WHERE idCourse = ? AND idTeacher = ?",
+          [strSubject, intGrade, strClassroom, strHour, idCourse, idTeacher]
+        );
+        res.json({ success: true, message: "Curso actualizado con éxito" });
+        break;
+
+      case 3: // BORRAR
+        await pool.query(
+          "DELETE FROM course WHERE idCourse = ? AND idTeacher = ?",
+          [idCourse, idTeacher]
+        );
+        res.json({ success: true, message: "Curso eliminado con éxito" });
+        break;
+
+      default:
+        res.status(400).json({ success: false, message: "Modo inválido para course" });
+    }
   } catch (error) {
-    console.error("❌ Error al obtener cursos:", error);
-    res.status(500).json({ success: false, message: "Error al obtener los cursos" });
+    console.error("Error en wsCRUDcourse:", error);
+    res.status(500).json({ success: false, message: "Error en el servidor al procesar cursos" });
   }
 });
+
 
 
 app.listen(port, () => {
