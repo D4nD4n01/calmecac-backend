@@ -135,7 +135,7 @@ app.post("/wsCRUDcourse", async (req, res) => {
 app.post("/getcourse", (req, res) => {
   const { idCourse } = req.body;
   if (!idCourse) {
-    return res.json({ success: false, message: "Falta idCourse" });
+    return res.json({ success: false, message: "Falta idCourse",result:req });
   }
 
   const query = "SELECT * FROM course WHERE idCourse = ?";
