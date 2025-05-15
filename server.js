@@ -124,7 +124,7 @@ app.post("/wsCRUDcourse", async (req, res) => {
         break;
 
       default:
-        res.status(400).json({ success: false, message: "Que nalgotas memo" });
+        res.status(400).json({ success: false, message: "Modo inválido para course" });
     }
   } catch (error) {
     console.error("Error en wsCRUDcourse:", error);
