@@ -132,6 +132,26 @@ app.post("/wsCRUDcourse", async (req, res) => {
   }
 });
 
+app.post("/getcourse", (req, res) => {
+  const { idCourse } = req.body;
+  if (!idCourse) {
+    return res.json({ success: false, message: "Falta idCourse" });
+  }
+
+  const query = "SELECT * FROM course WHERE idCourse = ?";
+  connection.query(query, [idCourse], (error, results) => {
+    if (error) {
+      console.error("Error en la consulta:", error);
+      return res.json({ success: false, message: "Error en la base de datos" });
+    }
+
+    if (results.length > 0) {
+      return res.json({ success: true, result: results[0] });
+    } else {
+      return res.json({ success: false, message: "Curso no encontrado" });
+    }
+  });
+});
 
 
 app.listen(port, () => {
