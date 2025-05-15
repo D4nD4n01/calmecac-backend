@@ -132,26 +132,44 @@ app.post("/wsCRUDcourse", async (req, res) => {
   }
 });
 
-app.post("/getcourse", (req, res) => {
-  const { idCourse } = req.body;
-  if (!idCourse) {
-    return res.json({ success: false, message: "Falta idCourse",result:req });
+app.post("/getcourse", async (req, res) => {
+  try {
+    const { idCourse } = req.body;
+
+    // Validación básica del parámetro
+    if (!idCourse || isNaN(idCourse)) {
+      return res.status(400).json({
+        success: false,
+        message: "Parámetro 'idCourse' inválido o faltante"
+      });
+    }
+
+    // Consulta a la base de datos
+    const [rows] = await pool.query(
+      "SELECT * FROM course WHERE idCourse = ?",
+      [idCourse]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Curso no encontrado"
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: rows[0] // Solo se devuelve un curso
+    });
+  } catch (error) {
+    console.error("Error en /getcourse:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error interno del servidor"
+    });
   }
-
-  const query = "SELECT * FROM course WHERE idCourse = ?";
-  connection.query(query, [idCourse], (error, results) => {
-    if (error) {
-      console.error("Error en la consulta:", error);
-      return res.json({ success: false, message: "Error en la base de datos" });
-    }
-
-    if (results.length > 0) {
-      return res.json({ success: true, result: results[0] });
-    } else {
-      return res.json({ success: false, message: "Curso no encontrado" });
-    }
-  });
 });
+
 
 
 app.listen(port, () => {
