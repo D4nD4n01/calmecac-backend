@@ -140,7 +140,8 @@ app.post("/getcourse", async (req, res) => {
     if (!idCourse || isNaN(idCourse)) {
       return res.status(400).json({
         success: false,
-        message: "Parámetro 'idCourse' inválido o faltante"
+        message: "Parámetro 'idCourse' inválido o faltante",
+        
       });
     }
 
@@ -159,7 +160,7 @@ app.post("/getcourse", async (req, res) => {
 
     return res.json({
       success: true,
-      data: rows[0] // Solo se devuelve un curso
+      data: rows[0] 
     });
   } catch (error) {
     console.error("Error en /getcourse:", error);
@@ -167,6 +168,46 @@ app.post("/getcourse", async (req, res) => {
       success: false,
       message: "Error interno del servidor"
     });
+  }
+});
+
+app.post("/wsCRUDstudents", async (req, res) => {
+  const { intMode, idCourse, strName, intNumberList, idStudent } = req.body;
+
+  try {
+    let result;
+
+    switch (intMode) {
+      case 0: // Consultar estudiantes por curso
+        [result] = await pool.query("SELECT * FROM students WHERE idCourse = ?", [idCourse]);
+        break;
+
+      case 1: // Insertar estudiante
+        [result] = await pool.query(
+          "INSERT INTO students (idCourse, strName, intNumberList) VALUES (?, ?, ?)",
+          [idCourse, strName, intNumberList]
+        );
+        break;
+
+      case 2: // Editar estudiante
+        [result] = await pool.query(
+          "UPDATE students SET strName = ?, intNumberList = ? WHERE idStudent = ?",
+          [strName, intNumberList, idStudent]
+        );
+        break;
+
+      case 3: // Eliminar estudiante
+        [result] = await pool.query("DELETE FROM students WHERE idStudent = ?", [idStudent]);
+        break;
+
+      default:
+        return res.status(400).json({ success: false, message: "intMode inválido." });
+    }
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error("Error en wsCRUDstudents:", error);
+    res.status(500).json({ success: false, message: "Error del servidor." });
   }
 });
 
