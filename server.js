@@ -117,8 +117,8 @@ app.post("/wsCRUDcourse", async (req, res) => {
 
       case 3: // BORRAR
         await pool.query(
-          "DELETE FROM course WHERE idCourse = ? AND idTeacher = ?",
-          [idCourse, idTeacher]
+          "DELETE FROM course WHERE idCourse = ? ",
+          [idCourse]
         );
         res.json({ success: true, message: "Curso eliminado con éxito" });
         break;
