@@ -50,7 +50,7 @@ app.post("/wsCRUDlogin", async (req, res) => {
     switch (intMode) {
       case 0: // CONSULTAR
         const [rows] = await pool.query(
-          "SELECT * FROM users WHERE usuario = ? AND password = ?",
+          "SELECT * FROM users WHERE BINARY usuario = ? AND BINARY password = ?",
           [usuario, password]
         );
         if (rows.length > 0) {
