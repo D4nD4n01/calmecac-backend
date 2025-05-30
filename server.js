@@ -342,7 +342,6 @@ app.post("/wsCRUDattendance", async (req, res) => {
             strSubject,
           ]
         );
-
         if (result.affectedRows > 0) {
           return res.json({ success: true, insertId: result.insertId });
         } else {
@@ -351,7 +350,6 @@ app.post("/wsCRUDattendance", async (req, res) => {
             message: "No se pudo insertar el registro de asistencia.",
           });
         }
-
       case 2: // Actualizar asistencia
         [result] = await pool.query(
           "UPDATE attendance SET blnAssist = ? WHERE idAttendance = ?",
@@ -382,6 +380,91 @@ app.post("/wsCRUDattendance", async (req, res) => {
   }
 });
 
+// POST /getattendance
+app.post('/getattendance', async (req, res) => {
+  const { idTeacher } = req.body;
+
+  if (!idTeacher) {
+    return res.status(400).json({ success: false, message: "idTeacher requerido" });
+  }
+
+  try {
+    // 1. Obtener los cursos del maestro
+    const coursesQuery = `
+      SELECT idCourse, strSubject
+      FROM course
+      WHERE idTeacher = ?
+    `;
+    const courses = await db.query(coursesQuery, [idTeacher]);
+
+    if (courses.length === 0) {
+      return res.status(404).json({ success: false, message: "El maestro no tiene cursos." });
+    }
+
+    const courseIds = courses.map(c => c.idCourse);
+
+    // 2. Obtener todas las asistencias relacionadas con los cursos
+    const attendanceQuery = `
+      SELECT a.idAttendance, a.strDate, a.idCourse,
+             a.idStudent, a.blnAssist, a.intNumberControl, 
+             a.intNumberList, a.strName, a.strSubject
+      FROM attendance a
+      WHERE a.idCourse IN (?)
+      ORDER BY a.idCourse, a.idAttendance, a.idStudent
+    `;
+
+    const attendances = await db.query(attendanceQuery, [courseIds]);
+
+    // 3. Estructurar la respuesta
+    const groupedByCourse = {};
+
+    attendances.forEach(record => {
+      const {
+        idCourse, strSubject, idAttendance, strDate,
+        idStudent, blnAssist, intNumberControl,
+        intNumberList, strName
+      } = record;
+
+      if (!groupedByCourse[idCourse]) {
+        groupedByCourse[idCourse] = {
+          idCourse,
+          strSubject,
+          assist: []
+        };
+      }
+
+      let course = groupedByCourse[idCourse];
+
+      let attendanceEntry = course.assist.find(a => a.idAttendance === idAttendance);
+
+      if (!attendanceEntry) {
+        attendanceEntry = {
+          idAttendance,
+          strDate,
+          studentsAssist: []
+        };
+        course.assist.push(attendanceEntry);
+      }
+
+      attendanceEntry.studentsAssist.push({
+        idStudent,
+        blnAssist,
+        intNumberControl,
+        intNumberList,
+        strName
+      });
+    });
+
+    // 4. Convertir el objeto a arreglo
+    const result = Object.values(groupedByCourse);
+
+    return res.json({ success: true, data: result });
+
+  } catch (error) {
+    console.error("Error en /getattendance:", error);
+    return res.status(500).json({ success: false, message: "Error interno del servidor." });
+  }
+});
 
 
 
