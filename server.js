@@ -280,22 +280,48 @@ app.get("/getstudents", async (req, res) => {
 });
 
 app.post("/wsCRUDattendance", async (req, res) => {
-  const {intMode, strDate, idCourse, idStudent, blnAssist, idAttendance, intNumberControl,
-    intNumberList, strName,strSubject, } = req.body;
+  const {
+    intMode,
+    strDate,
+    idCourse,
+    idStudent,
+    blnAssist,
+    idAttendance,
+    intNumberControl,
+    intNumberList,
+    strName,
+    strSubject,
+  } = req.body;
 
   try {
     let result;
 
     switch (intMode) {
-      case 0: 
+      case 0: // Consultar asistencia por fecha y curso
         const [existingRows] = await pool.query(
           "SELECT * FROM attendance WHERE strDate = ? AND idCourse = ?",
           [strDate, idCourse]
         );
 
         if (existingRows.length > 0) {
+          const [totalStudents] = await pool.query(
+            "SELECT COUNT(*) AS total FROM students WHERE idCourse = ?",
+            [idCourse]
+          );
+
+          const total = totalStudents[0]?.total ?? 0;
+          const attendedCount = existingRows.filter(row => row.blnAssist === 1).length;
+          const allAttended = attendedCount === total;
           const notPresent = existingRows.filter(row => row.blnAssist === 0);
-          return res.json({ success: true, new: false, data: notPresent });
+
+          return res.json({
+            success: true,
+            new: false,
+            allAttended,
+            totalStudents: total,
+            attended: attendedCount,
+            data: notPresent,
+          });
         } else {
           return res.json({ success: true, new: true, data: [] });
         }
@@ -303,28 +329,59 @@ app.post("/wsCRUDattendance", async (req, res) => {
       case 1: // Insertar asistencia
         [result] = await pool.query(
           `INSERT INTO attendance 
-            (strDate, idCourse, idStudent, blnAssist, intNumberControl, intNumberList, strName, strSubject) 
+           (strDate, idCourse, idStudent, blnAssist, intNumberControl, intNumberList, strName, strSubject) 
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [strDate, idCourse, idStudent, blnAssist, intNumberControl, intNumberList, strName, strSubject]
+          [
+            strDate,
+            idCourse,
+            idStudent,
+            blnAssist,
+            intNumberControl,
+            intNumberList,
+            strName,
+            strSubject,
+          ]
         );
-        return res.json({ success: true, insertId: result.insertId });
+
+        if (result.affectedRows > 0) {
+          return res.json({ success: true, insertId: result.insertId });
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: "No se pudo insertar el registro de asistencia.",
+          });
+        }
 
       case 2: // Actualizar asistencia
         [result] = await pool.query(
           "UPDATE attendance SET blnAssist = ? WHERE idAttendance = ?",
           [blnAssist, idAttendance]
         );
-        return res.json({ success: true, affectedRows: result.affectedRows });
+
+        if (result.affectedRows > 0) {
+          return res.json({ success: true, affectedRows: result.affectedRows });
+        } else {
+          return res.status(404).json({
+            success: false,
+            message: "No se encontró el registro de asistencia para actualizar.",
+          });
+        }
 
       default:
-        return res.status(400).json({ success: false, message: "intMode inválido." });
+        return res.status(400).json({
+          success: false,
+          message: "intMode inválido.",
+        });
     }
-
   } catch (error) {
     console.error("Error en wsCRUDattendance:", error);
-    res.status(500).json({ success: false, message: "Error del servidor." });
+    res.status(500).json({
+      success: false,
+      message: "Error del servidor.",
+    });
   }
 });
+
 
 
 
