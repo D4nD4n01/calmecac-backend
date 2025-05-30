@@ -205,7 +205,7 @@ app.post("/wsCRUDstudents", async (req, res) => {
       case 2: // Editar estudiante
         [result] = await pool.query(
           "UPDATE students SET strName = ?, intNumberList = ?, intNumberControl = ? WHERE idStudent = ?",
-          [strName, intNumberList,intNumberControl, idStudent]
+          [strName, intNumberList, intNumberControl, idStudent]
         );
         break;
 
@@ -276,6 +276,53 @@ app.get("/getstudents", async (req, res) => {
       message: "Error interno del servidor",
       error: error.message,
     });
+  }
+});
+
+app.post("/wsCRUDattendance", async (req, res) => {
+  const {intMode, strDate, idCourse, idStudent, blnAssist, idAttendance, intNumberControl,
+    intNumberList, strName,strSubject, } = req.body;
+
+  try {
+    let result;
+
+    switch (intMode) {
+      case 0: 
+        const [existingRows] = await pool.query(
+          "SELECT * FROM attendance WHERE strDate = ? AND idCourse = ?",
+          [strDate, idCourse]
+        );
+
+        if (existingRows.length > 0) {
+          const notPresent = existingRows.filter(row => row.blnAssist === 0);
+          return res.json({ success: true, new: false, data: notPresent });
+        } else {
+          return res.json({ success: true, new: true, data: [] });
+        }
+
+      case 1: // Insertar asistencia
+        [result] = await pool.query(
+          `INSERT INTO attendance 
+            (strDate, idCourse, idStudent, blnAssist, intNumberControl, intNumberList, strName, strSubject) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [strDate, idCourse, idStudent, blnAssist, intNumberControl, intNumberList, strName, strSubject]
+        );
+        return res.json({ success: true, insertId: result.insertId });
+
+      case 2: // Actualizar asistencia
+        [result] = await pool.query(
+          "UPDATE attendance SET blnAssist = ? WHERE idAttendance = ?",
+          [blnAssist, idAttendance]
+        );
+        return res.json({ success: true, affectedRows: result.affectedRows });
+
+      default:
+        return res.status(400).json({ success: false, message: "intMode inválido." });
+    }
+
+  } catch (error) {
+    console.error("Error en wsCRUDattendance:", error);
+    res.status(500).json({ success: false, message: "Error del servidor." });
   }
 });
 
