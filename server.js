@@ -141,7 +141,7 @@ app.post("/getcourse", async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Parámetro 'idCourse' inválido o faltante",
-        
+
       });
     }
 
@@ -160,7 +160,7 @@ app.post("/getcourse", async (req, res) => {
 
     return res.json({
       success: true,
-      data: rows[0] 
+      data: rows[0]
     });
   } catch (error) {
     console.error("Error en /getcourse:", error);
@@ -210,6 +210,65 @@ app.post("/wsCRUDstudents", async (req, res) => {
     res.status(500).json({ success: false, message: "Error del servidor." });
   }
 });
+
+app.get("/getstudents", (req, res) => {
+  const query = `
+    SELECT s.idStudent, s.strName, s.intNumberList,
+           c.idCourse, c.strSubject
+    FROM students s
+    LEFT JOIN courses c ON s.idStudent = c.idStudent
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("❌ Error en la consulta:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Error en la base de datos",
+        error: err.message,
+      });
+    }
+
+    if (!results || results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No se encontraron estudiantes",
+        data: [],
+      });
+    }
+
+    // Agrupar estudiantes por idStudent
+    const grouped = {};
+
+    results.forEach((row) => {
+      const studentId = row.idStudent;
+
+      if (!grouped[studentId]) {
+        grouped[studentId] = {
+          strName: row.strName,
+          intNumberList: row.intNumberList,
+          course: [],
+        };
+      }
+
+      if (row.idCourse) {
+        grouped[studentId].course.push({
+          idCourse: row.idCourse,
+          strSubject: row.strSubject,
+          idStudent: studentId,
+        });
+      }
+    });
+
+    const response = Object.values(grouped);
+    return res.status(200).json({
+      success: true,
+      total: response.length,
+      data: response,
+    });
+  });
+});
+
 
 
 
