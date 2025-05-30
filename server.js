@@ -172,7 +172,7 @@ app.post("/getcourse", async (req, res) => {
 });
 
 app.post("/wsCRUDstudents", async (req, res) => {
-  const { intMode, idCourse, strName, intNumberList, idStudent } = req.body;
+  const { intMode, idCourse, strName, intNumberList, idStudent, intNumberControl } = req.body;
 
   try {
     let result;
@@ -183,16 +183,29 @@ app.post("/wsCRUDstudents", async (req, res) => {
         break;
 
       case 1: // Insertar estudiante
+        // Obtener strSubject desde la tabla course
+        const [courseRows] = await pool.query(
+          "SELECT strSubject FROM course WHERE idCourse = ?",
+          [idCourse]
+        );
+
+        if (courseRows.length === 0) {
+          return res.status(404).json({ success: false, message: "Curso no encontrado." });
+        }
+
+        const strSubject = courseRows[0].strSubject;
+
+        // Insertar estudiante con strSubject
         [result] = await pool.query(
-          "INSERT INTO students (idCourse, strName, intNumberList) VALUES (?, ?, ?)",
-          [idCourse, strName, intNumberList]
+          "INSERT INTO students (idCourse, strName, intNumberList, strSubject, intNumberControl) VALUES (?, ?, ?, ?, ?)",
+          [idCourse, strName, intNumberList, strSubject, intNumberControl]
         );
         break;
 
       case 2: // Editar estudiante
         [result] = await pool.query(
-          "UPDATE students SET strName = ?, intNumberList = ? WHERE idStudent = ?",
-          [strName, intNumberList, idStudent]
+          "UPDATE students SET strName = ?, intNumberList = ?, intNumberControl = ? WHERE idStudent = ?",
+          [strName, intNumberList,intNumberControl, idStudent]
         );
         break;
 
