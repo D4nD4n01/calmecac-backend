@@ -213,8 +213,7 @@ app.post("/wsCRUDstudents", async (req, res) => {
 
 app.get("/getstudents", (req, res) => {
   const query = `
-    SELECT idStudent, strName, intNumberList AS numberList, intNumberControl, idCourse, strSubject
-    FROM students
+    SELECT * FROM students
   `;
 
   db.query(query, (err, results) => {
@@ -235,7 +234,6 @@ app.get("/getstudents", (req, res) => {
       });
     }
 
-    // Agrupar por intNumberControl + strName
     const grouped = {};
 
     results.forEach((row) => {
