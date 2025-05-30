@@ -211,14 +211,16 @@ app.post("/wsCRUDstudents", async (req, res) => {
   }
 });
 
+// Ruta: /getstudents
 app.get("/getstudents", (req, res) => {
   const query = `
-    SELECT * FROM students
+    SELECT idStudent, strName, intNumberControl, intNumberList, idCourse, strSubject
+    FROM students
   `;
 
   db.query(query, (err, results) => {
     if (err) {
-      console.error("❌ Error en la consulta:", err);
+      console.error("❌ Error al consultar estudiantes:", err);
       return res.status(500).json({
         success: false,
         message: "Error en la base de datos",
@@ -234,30 +236,29 @@ app.get("/getstudents", (req, res) => {
       });
     }
 
+    // Agrupar por intNumberControl (único por alumno)
     const grouped = {};
 
     results.forEach((row) => {
       const control = row.intNumberControl;
-      const key = `${control}-${row.strName}`;
 
-      if (!grouped[key]) {
-        grouped[key] = {
+      if (!grouped[control]) {
+        grouped[control] = {
           strName: row.strName,
           intNumberControl: control,
           course: [],
         };
       }
 
-      grouped[key].course.push({
+      grouped[control].course.push({
         idCourse: row.idCourse,
         strSubject: row.strSubject,
         idStudent: row.idStudent,
-        intNumberList: row.numberList,
+        intNumberList: row.intNumberList,
       });
     });
 
     const response = Object.values(grouped);
-
     return res.status(200).json({
       success: true,
       total: response.length,
