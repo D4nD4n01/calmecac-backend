@@ -213,10 +213,8 @@ app.post("/wsCRUDstudents", async (req, res) => {
 
 app.get("/getstudents", (req, res) => {
   const query = `
-    SELECT s.idStudent, s.strName, s.intNumberList,
-           c.idCourse, c.strSubject
-    FROM students s
-    LEFT JOIN courses c ON s.idStudent = c.idStudent
+    SELECT idStudent, strName, intNumberList AS numberList, intNumberControl, idCourse, strSubject
+    FROM students
   `;
 
   db.query(query, (err, results) => {
@@ -237,30 +235,31 @@ app.get("/getstudents", (req, res) => {
       });
     }
 
-    // Agrupar estudiantes por idStudent
+    // Agrupar por intNumberControl + strName
     const grouped = {};
 
     results.forEach((row) => {
-      const studentId = row.idStudent;
+      const control = row.intNumberControl;
+      const key = `${control}-${row.strName}`;
 
-      if (!grouped[studentId]) {
-        grouped[studentId] = {
+      if (!grouped[key]) {
+        grouped[key] = {
           strName: row.strName,
-          intNumberList: row.intNumberList,
+          intNumberControl: control,
           course: [],
         };
       }
 
-      if (row.idCourse) {
-        grouped[studentId].course.push({
-          idCourse: row.idCourse,
-          strSubject: row.strSubject,
-          idStudent: studentId,
-        });
-      }
+      grouped[key].course.push({
+        idCourse: row.idCourse,
+        strSubject: row.strSubject,
+        idStudent: row.idStudent,
+        intNumberList: row.numberList,
+      });
     });
 
     const response = Object.values(grouped);
+
     return res.status(200).json({
       success: true,
       total: response.length,
@@ -268,7 +267,6 @@ app.get("/getstudents", (req, res) => {
     });
   });
 });
-
 
 
 
