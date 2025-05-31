@@ -380,7 +380,6 @@ app.post("/wsCRUDattendance", async (req, res) => {
   }
 });
 
-// POST /getattendance
 app.post('/getattendance', async (req, res) => {
   const { idTeacher } = req.body;
 
@@ -390,12 +389,10 @@ app.post('/getattendance', async (req, res) => {
 
   try {
     // 1. Obtener los cursos del maestro
-    const coursesQuery = `
-      SELECT idCourse, strSubject
-      FROM course
-      WHERE idTeacher = ?
-    `;
-    const courses = await db.query(coursesQuery, [idTeacher]);
+    const [courses] = await pool.query(
+      `SELECT idCourse, strSubject FROM course WHERE idTeacher = ?`,
+      [idTeacher]
+    );
 
     if (courses.length === 0) {
       return res.status(404).json({ success: false, message: "El maestro no tiene cursos." });
@@ -403,17 +400,23 @@ app.post('/getattendance', async (req, res) => {
 
     const courseIds = courses.map(c => c.idCourse);
 
+    // Verificar que courseIds no esté vacío
+    if (courseIds.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
     // 2. Obtener todas las asistencias relacionadas con los cursos
-    const attendanceQuery = `
+    const [attendances] = await pool.query(
+      `
       SELECT a.idAttendance, a.strDate, a.idCourse,
              a.idStudent, a.blnAssist, a.intNumberControl, 
              a.intNumberList, a.strName, a.strSubject
       FROM attendance a
       WHERE a.idCourse IN (?)
       ORDER BY a.idCourse, a.idAttendance, a.idStudent
-    `;
-
-    const attendances = await db.query(attendanceQuery, [courseIds]);
+      `,
+      [courseIds]
+    );
 
     // 3. Estructurar la respuesta
     const groupedByCourse = {};
@@ -433,7 +436,7 @@ app.post('/getattendance', async (req, res) => {
         };
       }
 
-      let course = groupedByCourse[idCourse];
+      const course = groupedByCourse[idCourse];
 
       let attendanceEntry = course.assist.find(a => a.idAttendance === idAttendance);
 
