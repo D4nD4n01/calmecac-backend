@@ -438,7 +438,7 @@ app.post('/getattendance', async (req, res) => {
 
       const course = groupedByCourse[idCourse];
 
-      let attendanceEntry = course.assist.find(a => a.idAttendance === idAttendance);
+      let attendanceEntry = course.assist.find(a => a.strDate === strDate);
 
       if (!attendanceEntry) {
         attendanceEntry = {
