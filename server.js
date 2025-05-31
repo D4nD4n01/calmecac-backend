@@ -442,7 +442,7 @@ app.post('/getattendance', async (req, res) => {
 
       if (!attendanceEntry) {
         attendanceEntry = {
-          idAttendance,
+          
           strDate,
           studentsAssist: []
         };
@@ -450,6 +450,7 @@ app.post('/getattendance', async (req, res) => {
       }
 
       attendanceEntry.studentsAssist.push({
+        idAttendance,
         idStudent,
         blnAssist,
         intNumberControl,
