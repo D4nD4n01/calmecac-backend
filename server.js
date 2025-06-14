@@ -22,15 +22,6 @@ const dbConfig = {
   database: cleanEnv(process.env.DB_DATABASE),
 };
 
-console.log("Valores de conexión LIMPIOS:");
-console.log("ola q ase")
-console.log("HOST:", dbConfig.host);
-console.log("PORT:", dbConfig.port);
-console.log("USER:", dbConfig.user);
-console.log("PASS:", dbConfig.password);
-console.log("DB:", dbConfig.database);
-
-// Crear conexión con valores limpios
 const pool = mysql.createPool(dbConfig);
 
 
@@ -48,7 +39,7 @@ app.post("/wsCRUDlogin", async (req, res) => {
 
   try {
     switch (intMode) {
-      case 0: // CONSULTAR
+      case 0:
         const [rows] = await pool.query(
           "SELECT * FROM users WHERE BINARY usuario = ? AND BINARY password = ?",
           [usuario, password]
@@ -60,15 +51,24 @@ app.post("/wsCRUDlogin", async (req, res) => {
         }
         break;
 
-      case 1: // INSERTAR
-        await pool.query(
-          "INSERT INTO users (usuario, password) VALUES (?, ?)",
-          [usuario, password]
+      case 1:
+        const [existingUser] = await pool.query(
+          "SELECT * FROM users WHERE BINARY usuario = ?",
+          [usuario]
         );
-        res.json({ success: true, message: "Usuario registrado con éxito" });
+
+        if (existingUser.length > 0) {
+          res.status(409).json({ success: false, message: "El usuario ya existe" });
+        } else {
+          await pool.query(
+            "INSERT INTO users (usuario, password) VALUES (?, ?)",
+            [usuario, password]
+          );
+          res.json({ success: true, message: "Usuario registrado con éxito" });
+        }
         break;
 
-      case 2: // EDITAR
+      case 2:
         await pool.query(
           "UPDATE users SET usuario = ?, password = ? WHERE id = ?",
           [newUsuario, newPassword, id]
@@ -132,6 +132,7 @@ app.post("/wsCRUDcourse", async (req, res) => {
   }
 });
 
+
 app.post("/getcourse", async (req, res) => {
   try {
     const { idCourse } = req.body;
@@ -178,12 +179,33 @@ app.post("/wsCRUDstudents", async (req, res) => {
     let result;
 
     switch (intMode) {
-      case 0: // Consultar estudiantes por curso
+      case 0: 
         [result] = await pool.query("SELECT * FROM students WHERE idCourse = ?", [idCourse]);
         break;
 
-      case 1: // Insertar estudiante
-        // Obtener strSubject desde la tabla course
+      case 1: 
+
+        const [listExists] = await pool.query(
+          "SELECT * FROM students WHERE idCourse = ? AND intNumberList = ?",
+          [idCourse, intNumberList]
+        );
+
+        if (listExists.length > 0) {
+          return res.status(409).json({ success: false, message: "El número de lista ya existe en el curso." });
+        }
+
+        const [controlExists] = await pool.query(
+          "SELECT * FROM students WHERE idCourse = ? AND intNumberControl = ?",
+          [idCourse, intNumberControl]
+        );
+
+        if (controlExists.length > 0) {
+          const sameName = controlExists.find(student => student.strName === strName);
+          if (!sameName) {
+            return res.status(409).json({ success: false, message: "El número de control ya está registrado para otro alumno en este curso." });
+          }
+        }
+
         const [courseRows] = await pool.query(
           "SELECT strSubject FROM course WHERE idCourse = ?",
           [idCourse]
@@ -195,21 +217,42 @@ app.post("/wsCRUDstudents", async (req, res) => {
 
         const strSubject = courseRows[0].strSubject;
 
-        // Insertar estudiante con strSubject
         [result] = await pool.query(
           "INSERT INTO students (idCourse, strName, intNumberList, strSubject, intNumberControl) VALUES (?, ?, ?, ?, ?)",
           [idCourse, strName, intNumberList, strSubject, intNumberControl]
         );
         break;
 
-      case 2: // Editar estudiante
+      case 2: 
+
+        const [listExistsEdit] = await pool.query(
+          "SELECT * FROM students WHERE idCourse = ? AND intNumberList = ? AND idStudent != ?",
+          [idCourse, intNumberList, idStudent]
+        );
+
+        if (listExistsEdit.length > 0) {
+          return res.status(409).json({ success: false, message: "El número de lista ya existe en el curso." });
+        }
+
+        const [controlExistsEdit] = await pool.query(
+          "SELECT * FROM students WHERE idCourse = ? AND intNumberControl = ? AND idStudent != ?",
+          [idCourse, intNumberControl, idStudent]
+        );
+
+        if (controlExistsEdit.length > 0) {
+          const sameNameEdit = controlExistsEdit.find(student => student.strName === strName);
+          if (!sameNameEdit) {
+            return res.status(409).json({ success: false, message: "El número de control ya está registrado para otro alumno en este curso." });
+          }
+        }
+
         [result] = await pool.query(
           "UPDATE students SET strName = ?, intNumberList = ?, intNumberControl = ? WHERE idStudent = ?",
           [strName, intNumberList, intNumberControl, idStudent]
         );
         break;
 
-      case 3: // Eliminar estudiante
+      case 3: 
         [result] = await pool.query("DELETE FROM students WHERE idStudent = ?", [idStudent]);
         break;
 
@@ -223,6 +266,7 @@ app.post("/wsCRUDstudents", async (req, res) => {
     res.status(500).json({ success: false, message: "Error del servidor." });
   }
 });
+
 
 app.get("/getstudents", async (req, res) => {
   try {
@@ -395,12 +439,11 @@ app.post('/getattendance', async (req, res) => {
     );
 
     if (courses.length === 0) {
-      return res.status(404).json({ success: false, message: "El maestro no tiene cursos." });
+      return res.status(404).json({ success: false, message: "El maestro no tiene cursos o no ha registrado fechas." });
     }
 
     const courseIds = courses.map(c => c.idCourse);
 
-    // Verificar que courseIds no esté vacío
     if (courseIds.length === 0) {
       return res.json({ success: true, data: [] });
     }
@@ -442,7 +485,7 @@ app.post('/getattendance', async (req, res) => {
 
       if (!attendanceEntry) {
         attendanceEntry = {
-          
+
           strDate,
           studentsAssist: []
         };
@@ -469,7 +512,6 @@ app.post('/getattendance', async (req, res) => {
     return res.status(500).json({ success: false, message: "Error interno del servidor." });
   }
 });
-
 
 
 app.listen(port, () => {
